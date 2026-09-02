@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PA1 NIFTY BUDDY LIVE</title>
+<style>
+body{background:#0a0a0f;color:#fff;font-family:system-ui;padding:15px;margin:0}
+.card{background:#181825;border:1px solid #2a2a3a;border-radius:16px;padding:16px;margin:12px 0}
+h1{color:#a5ff6e;text-align:center}
+.big{font-size:32px;font-weight:800}
+.green{color:#a5ff6e}.red{color:#ff6b6b}
+.live{animation:blink 1s infinite}@keyframes blink{50%{opacity:0.3}}
+</style>
+</head>
+<body>
+<h1>PA1 NIFTY BUDDY <span class="live">● LIVE</span></h1>
+<div id="box">Loading LIVE data...</div>
+<script>
+async function load(){
+ try{
+  const r = await fetch('/api/nifty');
+  const d = await r.json();
+  document.getElementById('box').innerHTML = `
+   <div class="card"><b>PCR Ratio</b><br><span class="big">${d.pcr}</span> - ${d.pcrSignal}</div>
+   <div class="card"><b>Max Pain</b><br><span class="big">${d.maxPain}</span></div>
+   <div class="card"><b>Call OI Resistance</b><br><span class="big">${d.callOI}</span></div>
+   <div class="card"><b>Put OI Support</b><br><span class="big">${d.putOI}</span></div>
+   <div class="card"><b>Trend</b><br>${d.trend}</div>
+  `;
+ }catch(e){document.getElementById('box').innerHTML='Error: '+e}
+}
+load(); setInterval(load,45000);
+</script>
+</body>
+</html>
