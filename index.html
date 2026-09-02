@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PA1 NIFTY BUDDY LIVE</title>
+<style>
+body{background:#080810;color:#fff;font-family:system-ui;padding:12px;margin:0}
+h1{color:#a5ff6e;text-align:center;margin:10px 0;font-size:22px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:linear-gradient(145deg,#181825,#1f1f33);border:1px solid #2a2a4a;border-radius:16px;padding:14px}
+.card.full{grid-column:span 2}
+.label{font-size:11px;letter-spacing:1px;opacity:0.6}
+.val{font-size:28px;font-weight:900;margin:6px 0}
+.green{color:#a5ff6e}.red{color:#ff6e7a}
+.live{width:10px;height:10px;background:#a5ff6e;border-radius:50%;display:inline-block;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:0.2}}
+small{opacity:0.6}
+</style>
+</head>
+<body>
+<h1>PA1 NIFTY BUDDY <span class="live"></span> LIVE</h1>
+<div id="root"><div style="text-align:center;padding:40px">Loading LIVE...</div></div>
+<script>
+async function load(){
+ try{
+  const r=await fetch('/api/nifty'); const d=await r.json();
+  const sig = d.pcrSignal || (d.pcr>1?'Bullish':'Bearish');
+  const tr = d.trend || (d.pcr>1?'BULLISH':'BEARISH');
+  document.getElementById('root').innerHTML=`
+   <div class="grid">
+    <div class="card"><div class="label">PCR RATIO</div><div class="val ${d.pcr>1?'green':'red'}">${d.pcr}</div><small class="${d.pcr>1?'green':'red'}">${sig}</small></div>
+    <div class="card"><div class="label">MAX PAIN</div><div class="val">${d.maxPain}</div><small>Magnet</small></div>
+    <div class="card"><div class="label">CALL OI RESISTANCE</div><div class="val red">${d.callOI}</div><small>Sell zone</small></div>
+    <div class="card"><div class="label">PUT OI SUPPORT</div><div class="val green">${d.putOI}</div><small>Buy zone</small></div>
+    <div class="card full"><div class="label">TREND</div><div style="font-weight:700;margin-top:6px" class="${d.pcr>1?'green':'red'}">${tr}</div><small style="display:block;margin-top:8px">Last: ${new Date().toLocaleTimeString()} • Auto 45s</small></div>
+   </div>
+  `;
+ }catch(e){document.getElementById('root').innerHTML='Error: '+e}
+}
+load(); setInterval(load,45000);
+</script>
+</body>
+</html>
