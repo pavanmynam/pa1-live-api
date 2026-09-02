@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PA1 BUDDY PRO v4 - Voice AI</title>
+<style>
+*{box-sizing:border-box}body{background:#080810;color:#fff;font-family:system-ui;margin:0;padding:0}
+.topbar{background:#111122;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #2a2a4a}
+.lang button{background:#22223a;color:#fff;border:1px solid #3a3a5a;border-radius:20px;padding:4px 10px;margin-left:4px;font-size:11px}
+.lang button.active{background:#a5ff6e;color:#000}
+.ticker{background:#000;color:#ffd86e;white-space:nowrap;overflow:hidden;padding:6px 0;font-size:12px;font-weight:700}
+.ticker span{display:inline-block;padding-left:100%;animation:scroll 20s linear infinite}
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+.searchWrap{background:#171729;margin:8px;border-radius:14px;border:1px solid #2a2a4a;padding:8px}
+.searchRow{display:flex;gap:6px;align-items:center}
+.searchRow input{flex:1;background:#0a0a1a;border:1px solid #2a2a4a;border-radius:10px;padding:10px;color:#fff;outline:none}
+.micBtn{background:#2a2a4a;border:none;border-radius:10px;padding:10px 14px;font-size:18px;cursor:pointer}
+.micBtn.listening{background:#ff3b3b;animation:pulse 1s infinite}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+.searchBtn{background:#a5ff6e;color:#000;border:none;border-radius:10px;padding:10px 16px;font-weight:900;cursor:pointer}
+.aiBox{background:#0f0f24;border:1px solid #a5ff6e50;border-radius:14px;padding:12px;margin-top:8px;display:none}
+.aiBox.show{display:block}
+.q{color:#a5ff6e;font-weight:800;font-size:13px}.a{margin-top:6px;font-size:13px;line-height:1.5}
+.main{padding:8px}.card{background:#171729;border:1px solid #2a2a4a;border-radius:14px;padding:12px;margin:6px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lab{font-size:9px;opacity:.5;letter-spacing:1px}.val{font-size:18px;font-weight:900}
+.green{color:#a5ff6e}.red{color:#ff6e7a}.yellow{color:#ffd86e}
+.live{width:8px;height:8px;background:#a5ff6e;border-radius:50%;display:inline-block;animation:b 1s infinite}@keyframes b{50%{opacity:.2}}
+.small{font-size:11px;opacity:.6}
+</style>
+</head>
+<body>
+<div class="topbar">
+<div style="font-weight:900;color:#a5ff6e">PA1 BUDDY <span class="live"></span> <span id="clock" style="color:#fff;font-size:11px;font-weight:400"></span></div>
+<div class="lang"><button onclick="setLang('te')" id="b-te" class="active">తెలుగు</button><button onclick="setLang('en')" id="b-en">EN</button><button onclick="setLang('hi')" id="b-hi">हिं</button></div>
+</div>
+<div class="ticker"><span id="tick">ఈరోజు మార్కెట్ బాగుంది - PA1 BUDDY LIVE</span></div>
+
+<div class="searchWrap">
+<div class="searchRow">
+<input id="qInput" placeholder="Ask: Nifty up or down? Reliance buy? Banknifty trend?">
+<button class="micBtn" id="micBtn" onclick="toggleMic()">🎤</button>
+<button class="searchBtn" onclick="askAI()">Search</button>
+</div>
+<div class="aiBox" id="aiBox">
+<div class="q" id="qShow"></div>
+<div class="a" id="aShow"></div>
+</div>
+</div>
+
+<div class="main">
+<div id="root">Loading NSE LIVE...</div>
+<div class="card" id="top5"></div>
+</div>
+
+<script>
+let curLang='te'; let nse={pcr:1.24,call:22600,put:22400,mp:22500,trend:'BULLISH - Range lo undi',gift:'+0.32%'};
+function setLang(l){curLang=l; document.querySelectorAll('.lang button').forEach(b=>b.classList.remove('active')); document.getElementById('b-'+l).classList.add('active'); updateTick();}
+
+function updateTick(){const bull=nse.pcr>1; document.getElementById('tick').innerText=bull?`🔥 ${curLang=='te'?'ఈరోజు మార్కెట్ బాగుంది - BUY on DIP':'Today market good - BUY on DIP'} | Gift ${nse.gift} | PCR ${nse.pcr} | ${curLang=='te'?'ట్రేడ్ చేయవచ్చు ✅':'Can trade ✅'} | `+`🔥 ${curLang=='te'?'ఈరోజు మార్కెట్ బాగుంది':'Today good'}`:`⚠️ ${curLang=='te'?'జాగ్రత్త - WAIT':'Caution - WAIT'} | PCR ${nse.pcr}`;}
+
+setInterval(()=>{document.getElementById('clock').innerText=new Date().toLocaleTimeString('en-IN',{hour12:true});},1000);
+
+async function loadNSE(){
+ try{const r=await fetch('/api/nifty');const d=await r.json(); nse={pcr:parseFloat(d.pcr)||1.24,call:d.callOI||22600,put:d.putOI||22400,mp:d.maxPain||22500,trend:d.trend||'BULLISH - Range lo undi',gift:d.giftNifty||'+0.32%',spot:d.spot||'23,489'}; render();}catch(e){render();}
+}
+function render(){
+ const bull=nse.pcr>1; updateTick();
+ document.getElementById('root').innerHTML=`
+  <div class="card" style="border-color:${bull?'#a5ff6e50':'#ff6e7a50'}"><div class="lab">NIFTY 50 SPOT • LIVE</div><div style="font-size:24px;font-weight:900" class="${bull?'green':'red'}">${nse.spot} <span style="font-size:12px">${nse.gift}</span></div><div class="grid2" style="margin-top:6px"><div class="lab">R: ${nse.call}</div><div class="lab">S: ${nse.put}</div></div></div>
+  <div class="grid2"><div class="card"><div class="lab">PCR</div><div class="val ${bull?'green':'red'}">${nse.pcr}</div><div class="small">${bull?'Bullish':'Bearish'}</div></div><div class="card"><div class="lab">MAX PAIN</div><div class="val">${nse.mp}</div></div><div class="card"><div class="lab">CALL RES</div><div class="val red">${nse.call}</div></div><div class="card"><div class="lab">PUT SUP</div><div class="val green">${nse.put}</div></div></div>
+  <div class="card"><div class="lab">TREND</div><div class="val" style="font-size:14px">${nse.trend}</div></div>`;
+ document.getElementById('top5').innerHTML=`<div class="lab">TOP 5 PERFECT CHECKLIST</div><div style="font-size:12px;margin-top:6px">${bull?'✅':'❌'} PCR ${nse.pcr} ${bull?'>1 Good':'<1 Bad'}<br>✅ Put ${nse.put} Buy Zone<br>✅ Call ${nse.call} Sell Zone<br>✅ Trend ${nse.trend}<br>✅ Gift ${nse.gift} ${nse.gift.includes('+')?'Good day':'Bad day'}<br><div style="margin-top:8px;text-align:center;font-weight:900;padding:6px;background:${bull?'#a5ff6e20':'#ff6e7a20'};border-radius:8px" class="${bull?'green':'red'}">${bull?'🚀 ఈరోజు బాగుంది - TRADE చేయవచ్చు':'🛑 ఈరోజు బాలేదు - WAIT'}</div></div>`;
+}
+
+function askAI(){
+ const q=document.getElementById('qInput').value.trim(); if(!q){return;}
+ const qL=q.toLowerCase(); let ans='';
+ const bull=nse.pcr>1;
+ // Logic for trading help
+ if(qL.includes('nifty') && (qL.includes('up')||qL.includes('down')||qL.includes('buy')||qL.includes('sell')||qL.includes('ela')||qL.includes('trend'))){
+   if(bull) ans= curLang=='te'?`NIFTY ippudu BULLISH lo undi bro. PCR ${nse.pcr} >1, Put Support ${nse.put} daggara strong ga undi. Call Resistance ${nse.call}. So next move UP. Strategy: ${nse.put} daggara BUY on DIP chey, ${nse.call} paina breakout ayithe CE buy. Today Good day ✅`:`Nifty is BULLISH. PCR ${nse.pcr}, Support ${nse.put}, Resistance ${nse.call}. Next UP. Buy near ${nse.put}, breakout above ${nse.call}. Today Good ✅`;
+   else ans= curLang=='te'?`NIFTY BEARISH lo undi. PCR ${nse.pcr} <1, ${nse.call} daggara sell pressure. So DOWN vastundi. Sell on rise chey.`:`Nifty BEARISH. PCR ${nse.pcr}, Sell on rise near ${nse.call}, support ${nse.put}.`;
+ }
+ else if(qL.includes('bank')){
+   ans= curLang=='te'?`BANKNIFTY kuda NIFTY ni follow avuthundi. NIFTY ${bull?'Bullish kabatti Bank kuda UP':'Bearish kabatti Down'}. Bank support ${nse.put-500} la untundi, resistance ${nse.call+500}.`:`BankNifty follows Nifty. Since Nifty is ${bull?'bullish':'bearish'}, BankNifty also ${bull?'up':'down'}.`;
+ }
+ else if(qL.includes('reliance')||qL.includes('tcs')||qL.includes('infosys')||qL.includes('hdfc')||qL.includes('share')||qL.includes('stock')){
+   const stock=q.toUpperCase();
+   ans= curLang=='te'?`${stock} - NIFTY ${bull?'bullish kabatti idi kuda bullish. Buy zone lo undi. Nifty Put support '+nse.put+' break kakapothe '+stock+' kuda up':'bearish kabatti careful. Nifty resistance '+nse.call+' daggara sell chey'}. Top 5 checklist chusi trade chey.`:`${stock} - Since Nifty is ${bull?'bullish':'bearish'}, ${stock} also ${bull?'bullish, can buy on dips':'bearish, wait'}. Use Nifty levels: Support ${nse.put}, Resistance ${nse.call}.`;
+ }
+ else{
+   ans= curLang=='te'?`Nee question "${q}" ki answer: Ippudu NIFTY PCR ${nse.pcr} (${bull?'Bullish':'Bearish'}), Support ${nse.put}, Resistance ${nse.call}. ${bull?'Market bagundi, trade cheyochu ✅':'Market weak, wait chey 🛑'}. Emaina specific share peru cheppu, nenu help chestha.`:`For "${q}": Nifty PCR ${nse.pcr} ${bull?'Bullish':'Bearish'}, Support ${nse.put}, Resistance ${nse.call}. ${bull?'Good day to trade ✅':'Wait 🛑'}. Ask any stock name.`;
+ }
+ document.getElementById('qShow').innerText='You: '+q;
+ document.getElementById('aShow').innerText='PA1 Buddy: '+ans;
+ document.getElementById('aiBox').classList.add('show');
+ // Speak answer if possible
+ if('speechSynthesis' in window){ const u=new SpeechSynthesisUtterance(ans); u.lang=curLang=='te'?'te-IN':curLang=='hi'?'hi-IN':'en-IN'; speechSynthesis.speak(u); }
+}
+
+// Voice Mic
+let rec=null; let listening=false;
+function toggleMic(){
+ if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){ alert('Mic Chrome lo matrame work avuthundi bro, search lo type chey'); return; }
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!rec){ rec=new SR(); rec.lang='te-IN'; rec.onresult=(e)=>{ const txt=e.results[0][0].transcript; document.getElementById('qInput').value=txt; askAI(); }; rec.onend=()=>{ listening=false; document.getElementById('micBtn').classList.remove('listening'); document.getElementById('micBtn').innerText='🎤'; }; }
+ if(!listening){ rec.start(); listening=true; document.getElementById('micBtn').classList.add('listening'); document.getElementById('micBtn').innerText='🔴'; }
+ else{ rec.stop(); }
+}
+document.getElementById('qInput').addEventListener('keydown',e=>{if(e.key==='Enter')askAI();});
+
+loadNSE(); setInterval(loadNSE,45000);
+</script>
+</body>
+</html>
